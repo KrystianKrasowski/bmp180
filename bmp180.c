@@ -32,6 +32,7 @@ uint16_t bmp180_read_memory(uint8_t address)
 	twi_write(BMP180_ADDRESS | TW_READ);
 	uint8_t msb = twi_read_ack();
 	uint8_t lsb = twi_read_nack();
+	twi_stop();
 	return msb << 8 | lsb;
 }
 
@@ -41,6 +42,7 @@ void bmp180_write_memory(uint8_t address, uint8_t value)
 	twi_write(BMP180_ADDRESS | TW_WRITE);
 	twi_write(address);
 	twi_write(value);
+	twi_stop();
 }
 
 void bmp180_get_callibration_params()

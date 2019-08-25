@@ -23,17 +23,27 @@ struct bmp180_measurements measurements = {
 	.up = 23843,
 };
 
-uint16_t bmp180_read_memory(uint8_t address)
+void bmp180_read_memory(uint8_t address, uint8_t buffer[], uint8_t size)
 {
 	twi_start();
 	twi_write(BMP180_ADDRESS | TW_WRITE);
 	twi_write(address);
 	twi_start();
 	twi_write(BMP180_ADDRESS | TW_READ);
-	uint8_t msb = twi_read_ack();
-	uint8_t lsb = twi_read_nack();
+	
+	for (uint8_t i = 0; i < size; i++)
+	{
+		if (i == size - 1)
+		{
+			buffer[i] = twi_read_nack();
+		}
+		else
+		{
+			buffer[i] = twi_read_ack();
+		}
+	}
+	
 	twi_stop();
-	return msb << 8 | lsb;
 }
 
 void bmp180_write_memory(uint8_t address, uint8_t value)
@@ -46,25 +56,50 @@ void bmp180_write_memory(uint8_t address, uint8_t value)
 }
 
 void bmp180_get_callibration_params()
-{	
-	callibration.ac1 = (int16_t) bmp180_read_memory(0xAA);
-	callibration.ac2 = (int16_t) bmp180_read_memory(0xAC);
-	callibration.ac3 = (int16_t) bmp180_read_memory(0xAE);
-	callibration.ac4 = bmp180_read_memory(0xB0);
-	callibration.ac5 = bmp180_read_memory(0xB2);
-	callibration.ac6 = bmp180_read_memory(0xB4);
-	callibration.b1  = (int16_t) bmp180_read_memory(0xB6);
-	callibration.b2  = (int16_t) bmp180_read_memory(0xB8);
-	callibration.mb  = (int16_t) bmp180_read_memory(0xBA);
-	callibration.mc  = (int16_t) bmp180_read_memory(0xBC);
-	callibration.md  = (int16_t) bmp180_read_memory(0xBE);
+{
+	uint8_t buffer[2];
+	
+	bmp180_read_memory(0xAA, buffer, 2);
+	callibration.ac1 = (int16_t) (buffer[0] << 8 | buffer[1]);
+	
+	bmp180_read_memory(0xAC, buffer, 2);
+	callibration.ac2 = (int16_t) (buffer[0] << 8 | buffer[1]);
+	
+	bmp180_read_memory(0xAE, buffer, 2);
+	callibration.ac3 = (int16_t) (buffer[0] << 8 | buffer[1]);
+	
+	bmp180_read_memory(0xB0, buffer, 2);
+	callibration.ac4 = buffer[0] << 8 | buffer[1];
+	
+	bmp180_read_memory(0xB2, buffer, 2);
+	callibration.ac5 = buffer[0] << 8 | buffer[1];
+	
+	bmp180_read_memory(0xB4, buffer, 2);
+	callibration.ac6 = buffer[0] << 8 | buffer[1];
+	
+	bmp180_read_memory(0xB6, buffer, 2);
+	callibration.b1 = (int16_t) (buffer[0] << 8 | buffer[1]);
+	
+	bmp180_read_memory(0xB8, buffer, 2);
+	callibration.b2 = (int16_t) (buffer[0] << 8 | buffer[1]);
+	
+	bmp180_read_memory(0xBA, buffer, 2);
+	callibration.mb = (int16_t) (buffer[0] << 8 | buffer[1]);
+	
+	bmp180_read_memory(0xBC, buffer, 2);
+	callibration.mc = (int16_t) (buffer[0] << 8 | buffer[1]);
+	
+	bmp180_read_memory(0xBE, buffer, 2);
+	callibration.md = (int16_t) (buffer[0] << 8 | buffer[1]);
 }
 
 void bmp180_get_raw_temperature()
 {
+	uint8_t buffer[2];
 	bmp180_write_memory(0xF4, 0x2E);
 	_delay_ms(5);
-	measurements.ut = (int32_t) bmp180_read_memory(0xF6);
+	bmp180_read_memory(0xF6, buffer, 2);
+	measurements.ut = (int32_t) (buffer[0] << 8 | buffer[1]);
 }
 
 uint8_t bmp180_calculate_true_temperature(int32_t *temperature)

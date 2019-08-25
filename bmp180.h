@@ -24,7 +24,7 @@ struct bmp180_measurements {
 
 int32_t	x1, x2, b5, t;
 
-uint16_t bmp180_read_memory(uint8_t address);
+void bmp180_read_memory(uint8_t address, uint8_t buffer[], uint8_t size);
 void bmp180_write_memory(uint8_t address, uint8_t value);
 void bmp180_get_callibration_params();
 void bmp180_get_raw_temperature();

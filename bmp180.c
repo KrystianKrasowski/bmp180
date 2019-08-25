@@ -102,6 +102,15 @@ void bmp180_get_raw_temperature()
 	measurements.ut = (int32_t) (buffer[0] << 8 | buffer[1]);
 }
 
+void bmp180_get_raw_pressure()
+{
+	uint8_t buffer[3];
+	bmp180_write_memory(0xF4, 0x74);
+	_delay_ms(8);
+	bmp180_read_memory(0xF6, buffer, 3);
+	measurements.up = (((int32_t) buffer[0] << 16 | (int32_t) buffer[1] << 8 | (int32_t) buffer[2]) >> 7);
+}
+
 uint8_t bmp180_calculate_true_temperature(int32_t *temperature)
 {
   	x1 = ((int32_t) measurements.ut - callibration.ac6) * callibration.ac5 >> 15;
@@ -109,5 +118,27 @@ uint8_t bmp180_calculate_true_temperature(int32_t *temperature)
   	b5 = x1 + x2;
  	t = (b5 + 8) >> 4;
  	*temperature = t;
+	return 1;
+}
+
+uint8_t bmp180_calculate_true_pressure(int32_t *pressure)
+{
+	b6 = b5 - 4000;
+	x1 = ((int32_t) callibration.b2 * (b6 * b6 >> 12)) >> 11;
+	x2 = (int32_t) callibration.ac2 * b6 >> 11;
+	x3 = x1 + x2;
+	b3 = ((((int32_t) callibration.ac1 * 4 + x3) << 1) + 2) >> 2;
+	x1 = (int32_t) callibration.ac3 * b6 >> 13;
+	x2 = ((int32_t) callibration.b1 * (b6 * b6 >> 12)) >> 16;
+	x3 = ((x1 + x2) + 2) >> 2;
+	b4 = (uint32_t) callibration.ac4 * (uint32_t) (x3 + 32768) >> 15;
+	b7 = ((uint32_t) measurements.up - b3) * (50000 >> 1);
+	p  = (b7 < 0x80000000) ? (b7 << 1) / b4 : (b7 / b4) << 1;
+	x1 = (p >> 8) * (p >> 8);
+	x1 = (x1 * 3038) >> 16;
+	x2 = (-7357 * p) >> 16;
+	p = p + ((x1 + x2 + 3791) >> 4);
+	
+	*pressure = p;
 	return 1;
 }
